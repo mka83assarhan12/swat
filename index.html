@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coral Reef Health Check</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            margin: 20px;
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: flex-start;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .content {
+            flex: 1;
+            padding: 20px;
+        }
+        .image-container {
+            flex: 1;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .image-container img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #800000;
+            text-align: center;
+            font-size: 2.5em;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            font-size: 1.2em;
+            color: #333;
+        }
+        input, button, select {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 1em;
+            background-color: #f9f9f9;
+        }
+        button {
+            background-color: #800000;
+            color: white;
+            cursor: pointer;
+            font-size: 1.2em;
+            transition: background-color 0.3s ease;
+        }
+        button.disabled {
+            background-color: #ddd;
+            color: #aaa;
+            cursor: not-allowed;
+        }
+        button:hover:not(.disabled) {
+            background-color: #660000;
+        }
+        .map-container {
+            width: 100%;
+            height: 400px;
+            background-color: #ddd;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        .tabs {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+        .tab-button {
+            padding: 10px 20px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            background-color: #800000;
+            color: white;
+            cursor: pointer;
+            font-size: 1.2em;
+            flex-grow: 1;
+            margin-right: 5px;
+        }
+        .tab-button.active {
+            background-color: #660000;
+        }
+
+        /* Popup style */
+        .popup {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .popup-content {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            width: 300px;
+        }
+        .popup button {
+            padding: 10px 20px;
+            background-color: green;
+            color: white;
+            font-size: 1.1em;
+            cursor: pointer;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        .popup button:hover {
+            background-color: darkgreen;
+        }
+
+        /* Style for the logo and title */
+        .logo-title-container {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+        }
+        .logo-title-container img {
+            width: 120px;  /* Increased size */
+            height: 150px; /* Increased size */
+            margin-right: 15px; /* Adjusted space between logo and title */
+        }
+        .logo-title-container h1 {
+            font-size: 2.5em;
+            color: #800000;
+            margin: 0;
+        }
+        .logo-title-container hr {
+            width: 80%;
+            border: 1px solid #000;
+            margin-top: 10px;
+        }
+    </style>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+</head>
+<body>
+    <div class="container">
+        <div class="content">
+            <!-- Logo and Title Section -->
+            <div class="logo-title-container">
+                <img src="D:\OneDrive - Ministry of Education and Higher Education\fll\swat\2.png" alt="Team Logo"> <!-- Replace with your logo path -->
+                <h1>Coral Reef Classification</h1>
+            </div>
+            <hr>
+            <div class="form-group">
+                <label for="uploadImage">Upload Coral Reef Image:</label>
+                <input type="file" id="uploadImage" accept="image/*">
+            </div>
+
+            <!-- Tabs for location selection -->
+            <div class="tabs">
+                <button class="tab-button active" id="mapTab">Select Location on Map</button>
+                <button class="tab-button" id="textTab">Enter Location Text</button>
+            </div>
+
+            <div class="form-group">
+                <label for="location">Location:</label>
+                <div id="mapContainer" class="map-container"></div>
+                <input type="text" id="locationInput" placeholder="Enter location text" style="display: none;">
+            </div>
+
+            <div class="form-group">
+                <button id="analyzeButton" class="disabled" disabled>Analyze Image</button>
+            </div>
+        </div>
+
+        <div class="image-container">
+            <img src="D:\OneDrive - Ministry of Education and Higher Education\fll\swat\coral2.gif" alt="------" style="border: 2px solid #000; border-radius: 8px;">
+            <p>Preview of uploaded image will appear here:</p>
+            <div id="uploadedImagePreview" style="width: 100%; height: 200px; background-color: #ddd; border-radius: 8px;"></div>
+        </div>
+    </div>
+
+    <!-- Popup for confirmation -->
+    <div id="popup" class="popup">
+        <div class="popup-content">
+            <p>Location confirmed at: <span id="confirmedLocationText"></span></p>
+            <button id="confirmLocationButton">OK</button>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+    <script>
+        let map, marker;
+        let imageUploaded = false;
+        let locationSelected = false;
+
+        document.getElementById('uploadImage').addEventListener('change', function() {
+            imageUploaded = this.files.length > 0;
+            const preview = document.getElementById('uploadedImagePreview');
+            if (imageUploaded) {
+                const file = this.files[0];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.style.backgroundImage = `url(${e.target.result})`;
+                    preview.style.backgroundSize = 'cover';
+                    preview.style.backgroundPosition = 'center';
+                };
+                reader.readAsDataURL(file);
+            } else {
+                preview.style.backgroundImage = '';
+            }
+            checkFormCompletion();
+        });
+
+        document.getElementById('mapTab').addEventListener('click', function() {
+            this.classList.add('active');
+            document.getElementById('textTab').classList.remove('active');
+            document.getElementById('mapContainer').style.display = 'block';
+            document.getElementById('locationInput').style.display = 'none';
+        });
+
+        document.getElementById('textTab').addEventListener('click', function() {
+            this.classList.add('active');
+            document.getElementById('mapTab').classList.remove('active');
+            document.getElementById('locationInput').style.display = 'block';
+            document.getElementById('mapContainer').style.display = 'none';
+        });
+
+        function initMap() {
+            map = L.map('mapContainer').setView([25.3548, 51.1839], 5);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+            
+            // Add marker on map click instead of drag
+            map.on('click', function(event) {
+                if (marker) {
+                    marker.setLatLng(event.latlng);
+                } else {
+                    marker = L.marker(event.latlng).addTo(map);
+                }
+                locationSelected = true;
+                checkFormCompletion();
+                showPopup(event.latlng);
+            });
+        }
+
+        function showPopup(latlng) {
+            const popup = document.getElementById('popup');
+            const confirmedLocationText = document.getElementById('confirmedLocationText');
+            confirmedLocationText.textContent = `${latlng.lat.toFixed(4)}, ${latlng.lng.toFixed(4)}`;
+            popup.style.display = 'flex';
+        }
+
+        document.getElementById('confirmLocationButton').addEventListener('click', function() {
+            document.getElementById('popup').style.display = 'none';
+        });
+
+        document.getElementById('locationInput').addEventListener('input', function() {
+            locationSelected = this.value.trim() !== '';
+            checkFormCompletion();
+        });
+
+        function checkFormCompletion() {
+            const analyzeButton = document.getElementById('analyzeButton');
+            if ((imageUploaded && (locationSelected || marker)) || (locationSelected && !marker)) {
+                analyzeButton.classList.remove('disabled');
+                analyzeButton.removeAttribute('disabled');
+            } else {
+                analyzeButton.classList.add('disabled');
+                analyzeButton.setAttribute('disabled', 'true');
+            }
+        }
+
+        initMap();
+    </script>
+</body>
+</html>
