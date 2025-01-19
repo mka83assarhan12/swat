@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Coral Reef Health Check</title>
+    <title>Coral Reef Classification</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -141,38 +141,15 @@
         .popup button:hover {
             background-color: darkgreen;
         }
-
-        /* Style for the logo and title */
-        .logo-title-container {
-            display: flex;
-            align-items: center;
-            justify-content: flex-start;
-        }
-        .logo-title-container img {
-            width: 120px;  /* Increased size */
-            height: 150px; /* Increased size */
-            margin-right: 15px; /* Adjusted space between logo and title */
-        }
-        .logo-title-container h1 {
-            font-size: 2.5em;
-            color: #800000;
-            margin: 0;
-        }
-        .logo-title-container hr {
-            width: 80%;
-            border: 1px solid #000;
-            margin-top: 10px;
-        }
     </style>
+
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 </head>
 <body>
     <div class="container">
         <div class="content">
-            <!-- Logo and Title Section -->
             <div class="logo-title-container">
-                <img src="2.png" alt="Team Logo"> <!-- Replace with your logo path -->
                 <h1>Coral Reef Classification</h1>
             </div>
             <hr>
@@ -180,43 +157,30 @@
                 <label for="uploadImage">Upload Coral Reef Image:</label>
                 <input type="file" id="uploadImage" accept="image/*">
             </div>
-
-            <!-- Tabs for location selection -->
             <div class="tabs">
                 <button class="tab-button active" id="mapTab">Select Location on Map</button>
                 <button class="tab-button" id="textTab">Enter Location Text</button>
             </div>
-
             <div class="form-group">
-                <label for="location">Location:</label>
                 <div id="mapContainer" class="map-container"></div>
                 <input type="text" id="locationInput" placeholder="Enter location text" style="display: none;">
             </div>
-
             <div class="form-group">
                 <button id="analyzeButton" class="disabled" disabled>Analyze Image</button>
             </div>
         </div>
-
         <div class="image-container">
-            <img src="coral2.gif" alt="------" style="border: 2px solid #000; border-radius: 8px;">
+            <img id="uploadedImagePreview" src="image_placeholder.jpg" alt="Uploaded Image Preview" style="border: 2px solid #000; border-radius: 8px;">
             <p>Preview of uploaded image will appear here:</p>
-            <div id="uploadedImagePreview" style="width: 100%; height: 200px; background-color: #ddd; border-radius: 8px;"></div>
         </div>
     </div>
 
-    <!-- Popup for confirmation -->
-    <div id="popup" class="popup">
-        <div class="popup-content">
-            <p>Location confirmed at: <span id="confirmedLocationText"></span></p>
-            <button id="confirmLocationButton">OK</button>
-        </div>
-    </div>
-
-    <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-
     <script>
+        const api_url = "https://detect.roboflow.com";
+        const api_key = "4BDSWSo79P86BTJjT3dn";  // Replace with your API Key
+        const model_id = "coral-reef-model";
+
         let map, marker;
         let imageUploaded = false;
         let locationSelected = false;
@@ -228,13 +192,9 @@
                 const file = this.files[0];
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    preview.style.backgroundImage = `url(${e.target.result})`;
-                    preview.style.backgroundSize = 'cover';
-                    preview.style.backgroundPosition = 'center';
+                    preview.src = e.target.result;
                 };
                 reader.readAsDataURL(file);
-            } else {
-                preview.style.backgroundImage = '';
             }
             checkFormCompletion();
         });
@@ -254,11 +214,9 @@
         });
 
         function initMap() {
-            map = L.map('mapContainer').setView([25.3548, 51.1839], 5);
-
+            map = L.map('mapContainer').setView([51.69386, 25.28079], 5);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
             
-            // Add marker on map click instead of drag
             map.on('click', function(event) {
                 if (marker) {
                     marker.setLatLng(event.latlng);
@@ -267,35 +225,55 @@
                 }
                 locationSelected = true;
                 checkFormCompletion();
-                showPopup(event.latlng);
             });
         }
 
-        function showPopup(latlng) {
-            const popup = document.getElementById('popup');
-            const confirmedLocationText = document.getElementById('confirmedLocationText');
-            confirmedLocationText.textContent = `${latlng.lat.toFixed(4)}, ${latlng.lng.toFixed(4)}`;
-            popup.style.display = 'flex';
-        }
-
-        document.getElementById('confirmLocationButton').addEventListener('click', function() {
-            document.getElementById('popup').style.display = 'none';
-        });
-
-        document.getElementById('locationInput').addEventListener('input', function() {
-            locationSelected = this.value.trim() !== '';
-            checkFormCompletion();
-        });
-
         function checkFormCompletion() {
             const analyzeButton = document.getElementById('analyzeButton');
-            if ((imageUploaded && (locationSelected || marker)) || (locationSelected && !marker)) {
+            if (imageUploaded && (locationSelected || document.getElementById('locationInput').value.trim())) {
                 analyzeButton.classList.remove('disabled');
-                analyzeButton.removeAttribute('disabled');
+                analyzeButton.disabled = false;
             } else {
                 analyzeButton.classList.add('disabled');
-                analyzeButton.setAttribute('disabled', 'true');
+                analyzeButton.disabled = true;
             }
+        }
+
+        document.getElementById('analyzeButton').addEventListener('click', analyzeImage);
+
+        function analyzeImage() {
+            const imageFile = document.getElementById('uploadImage').files[0];
+            if (!imageFile) {
+                alert('Please upload an image first!');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', imageFile);
+
+            let location = '';
+            if (locationSelected && marker) {
+                location = `${marker.getLatLng().lat.toFixed(4)}, ${marker.getLatLng().lng.toFixed(4)}`;
+            } else if (document.getElementById('locationInput').value.trim()) {
+                location = document.getElementById('locationInput').value.trim();
+            }
+            formData.append('location', location);
+
+            console.log("Sending request to Roboflow with location:", location);  // Log location
+
+            fetch(`${api_url}/${model_id}?api_key=${api_key}`, {
+                method: 'POST',
+                body: formData,
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);  // Log response from Roboflow
+                alert('Analysis complete! Prediction: ' + data.prediction);
+            })
+            .catch(error => {
+                console.error('Error during analysis:', error);
+                alert('Error during analysis: ' + error.message);
+            });
         }
 
         initMap();
